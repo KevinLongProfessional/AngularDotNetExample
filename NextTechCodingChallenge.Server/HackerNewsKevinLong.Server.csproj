@@ -17,7 +17,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\nexttechcodingchallenge.client\nexttechcodingchallenge.client.esproj">
+    <ProjectReference Include="..\nexttechcodingchallenge.client\HackerNewsKevinLong.client.esproj">
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
     </ProjectReference>
   </ItemGroup>
