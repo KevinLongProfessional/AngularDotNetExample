@@ -33,5 +33,5 @@ export class AppComponent implements OnInit {
     );
   }
 
-  title = 'nexttechcodingchallenge.client';
+  title = 'hackernewsKevinLong.client';
 }

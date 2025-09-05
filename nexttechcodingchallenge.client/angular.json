@@ -3,7 +3,7 @@
   "version": 1,
   "newProjectRoot": "projects",
   "projects": {
-    "nexttechcodingchallenge.client": {
+    "hackernewsKevinLong.client": {
       "projectType": "application",
       "schematics": {
         "@schematics/angular:component": {
@@ -23,7 +23,7 @@
         "build": {
           "builder": "@angular-devkit/build-angular:application",
           "options": {
-            "outputPath": "dist/nexttechcodingchallenge.client",
+            "outputPath": "dist/hackernewsKevinLong.client",
             "index": "src/index.html",
             "browser": "src/main.ts",
             "polyfills": [
@@ -67,10 +67,10 @@
           "builder": "@angular-devkit/build-angular:dev-server",
           "configurations": {
             "production": {
-              "buildTarget": "nexttechcodingchallenge.client:build:production"
+              "buildTarget": "hackernewsKevinLong.client:build:production"
             },
             "development": {
-              "buildTarget": "nexttechcodingchallenge.client:build:development"
+              "buildTarget": "hackernewsKevinLong.client:build:development"
             }
           },
           "defaultConfiguration": "development",
@@ -82,7 +82,7 @@
         "extract-i18n": {
           "builder": "@angular-devkit/build-angular:extract-i18n",
           "options": {
-            "buildTarget": "nexttechcodingchallenge.client:build"
+            "buildTarget": "hackernewsKevinLong.client:build"
           }
         },
         "test": {
