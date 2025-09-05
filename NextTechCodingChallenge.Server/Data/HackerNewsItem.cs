@@ -1,4 +1,6 @@
-﻿namespace HackerNewsKevinLong.Server.Data
+﻿using System.Text.Json;
+
+namespace HackerNewsKevinLong.Server.Data
 {
     public class HackerNewsItem
     {
@@ -13,6 +15,17 @@
         public List<int> Kids { get; set; }
         public string Url { get; set; }
 
-    }
+        public override bool Equals(object obj)
+        {
+            var item = obj as HackerNewsItem;
 
+            if (item == null)
+            {
+                return false;
+            }
+
+            return JsonSerializer.Serialize(this) == JsonSerializer.Serialize(item);
+        }
+
+    }
 }

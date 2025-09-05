@@ -18,14 +18,14 @@ namespace HackerNewsKevinLong.Server.Controllers
         [HttpGet("GetNews")]
         public async Task<IEnumerable<HackerNewsItem>> Get(int itemCount, int? startIndex)
         {
-            return await _Service.GetLatestItems(itemCount, startIndex, new List<HackerNewsItem>());
+            return await _Service.SearchItems(itemCount, startIndex, null);
         }
 
 
         [HttpGet("SearchNews")]
         public async Task<IEnumerable<HackerNewsItem>> Search(int itemCount, int? startIndex, string searchText)
         {
-            return await _Service.SearchItems(itemCount, startIndex, new List<HackerNewsItem>(), searchText);
+            return await _Service.SearchItems(itemCount, startIndex, searchText);
         }
     }
 }

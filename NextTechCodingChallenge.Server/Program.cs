@@ -1,4 +1,5 @@
 using HackerNewsKevinLong.Server.Services;
+using HackerNewsKevinLong.Server.Wrappers;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -11,6 +12,8 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddMemoryCache();
 
 builder.Services.AddScoped<IHackerNewsItemService, HackerNewsItemService>();
+builder.Services.AddScoped<IHttpClientWrapper, HttpClientWrapper>();
+builder.Services.AddScoped<IMemoryCacheWrapper, MemoryCacheWrapper>();
 builder.Services.AddHttpClient();
 
 var app = builder.Build();
