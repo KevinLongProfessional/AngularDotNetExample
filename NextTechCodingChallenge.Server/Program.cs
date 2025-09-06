@@ -16,6 +16,18 @@ builder.Services.AddScoped<IHttpClientWrapper, HttpClientWrapper>();
 builder.Services.AddScoped<IMemoryCacheWrapper, MemoryCacheWrapper>();
 builder.Services.AddHttpClient();
 
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy(name: "AllowAngularApp",
+        policy =>
+        {
+            policy.WithOrigins("http://localhost:49958", "https://localhost:49958")
+                .AllowAnyHeader()
+                .AllowAnyMethod();
+        });
+});
+
+
 var app = builder.Build();
 
 app.UseDefaultFiles();
@@ -30,10 +42,13 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
+app.UseCors("AllowAngularApp");
+
 app.UseAuthorization();
 
 app.MapControllers();
 
 app.MapFallbackToFile("/index.html");
+
 
 app.Run();

@@ -10,6 +10,7 @@ namespace HackerNewsKevinLong.Server.Data
         public string By { get; set; }
         public long Time { get; set; }
         public string Text { get; set; }
+        public string Title { get; set; }
         public bool Dead { get; set; }
         public int? Parent { get; set; }
         public List<int> Kids { get; set; }

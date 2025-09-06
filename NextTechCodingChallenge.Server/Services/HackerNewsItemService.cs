@@ -34,11 +34,12 @@ namespace HackerNewsKevinLong.Server.Services
 
                 foreach (string word in searchWords)
                 {
-                    Func<HackerNewsItem, bool> wordFilter = (Item) => { return Item.Text.ToLower().Contains(word); };
+                    Func<HackerNewsItem, bool> wordFilter = (Item) => { return Item.Title.ToLower().Contains(word); };
                     filters.Add(wordFilter);
                 }
             }
 
+            //to do: refactor cache. You need to cache the entire dataset, not specific search queries!
             var cacheValue = CheckCacheForValue(cacheKey);
             if (cacheValue != null)
             {
@@ -137,7 +138,7 @@ namespace HackerNewsKevinLong.Server.Services
             {
                 return (List<HackerNewsItem>)items;
             }
-            else return await GetItemsRecursive(itemCount, startIndex - itemCount, items);
+            else return await GetItemsRecursive(itemCount, startIndex - itemCount, items, filters);
         }
 
         private async Task<int> GetMaxId()
