@@ -12,8 +12,10 @@ import { FormsModule } from '@angular/forms';
 export class AppComponent implements OnInit {
   public hackerNewsItems: HackerNewsItem[] = [];
   public itemCount: number = 20;
-  public startIndex: number | undefined = undefined;
+  public startIndex: number = 0;
   public searchText: string = "";
+  public isLoading: boolean = false;
+  public reachedEnd: boolean = false;
 
   constructor(private client: Client, private http: HttpClient) {
   }
@@ -22,32 +24,55 @@ export class AppComponent implements OnInit {
     this.getNewsItems();
   }
 
-  async onSearchChanged(newValue: string) {
+  async swapPage(moveForward: boolean) {
+    if (moveForward) {
+      this.startIndex += this.itemCount;
+    }
+    else {
+      this.startIndex -= this.itemCount;
+    }
+
+    if (this.searchText.trim().length == 0) {
+      await this.getNewsItems();
+    }
+    else {
+      await this.onSearchChanged(false);
+    }
+  }
+
+  //to do: refactor to reduce duplicated logic.
+  async onSearchChanged(resetPage: boolean = true) {
+    this.reachedEnd = false;
+
+    if (resetPage) {
+      this.startIndex = 0;
+    }
+
+    this.isLoading = true;
+    this.hackerNewsItems = [];
     this.client.searchNews(this.itemCount, this.startIndex, this.searchText).subscribe((result) => {
       this.hackerNewsItems = result;
+      this.isLoading = false;
+      if (this.hackerNewsItems.length < this.itemCount) {
+        this.reachedEnd = true;
+      }
+
     });
   }
 
   async getNewsItems() {
-    console.log("!");
 
-   
-    //var headers = new HttpHeaders();
-    //headers.append("itemCount", this.itemCount.toString());
-    ////this is a hack, if the startIndex is 0 or below the server gets the highest start index possible instead.
-    //headers.append("startIndex", this.startIndex == null ? "-1" : this.startIndex.toString());
-
-    //this.http.get<HackerNewsItem[]>("//news/getnews/", { headers: headers }).subscribe(
-    //  (result) => {
-    //    this.hackerNewsItems = result;
-    //  },
-    //  (error) => {
-    //    console.error(error);
-    //  }
-    //);
+    this.reachedEnd = false;
+    this.isLoading = true;
+    this.hackerNewsItems = [];
 
     this.client.getNews(this.itemCount, this.startIndex).subscribe((result) => {
       this.hackerNewsItems = result;
+      this.isLoading = false;
+
+      if (this.hackerNewsItems.length < this.itemCount) {
+        this.reachedEnd = true;
+      }
     });
   }
 

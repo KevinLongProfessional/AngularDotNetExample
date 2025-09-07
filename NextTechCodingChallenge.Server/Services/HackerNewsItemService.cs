@@ -1,7 +1,8 @@
-﻿using Microsoft.Extensions.Caching.Memory;
-using HackerNewsKevinLong.Server.Data;
-using System.Text.Json;
+﻿using HackerNewsKevinLong.Server.Data;
 using HackerNewsKevinLong.Server.Wrappers;
+using Microsoft.Extensions.Caching.Memory;
+using System;
+using System.Text.Json;
 
 namespace HackerNewsKevinLong.Server.Services
 {
@@ -16,75 +17,47 @@ namespace HackerNewsKevinLong.Server.Services
             _Cache = Cache;
         }
 
-        public async Task<IList<HackerNewsItem>> SearchItems(int itemCount, int? startIndex = null, string? searchText = null)
+        public async Task<IList<HackerNewsItem>> SearchItems(int itemCount, int startIndex, string? searchText = null)
         {
-            string cacheKey = itemCount + "_" + startIndex;
             string[] searchWords = new string[0];
             List<Func<HackerNewsItem, bool>> filters = new List<Func<HackerNewsItem, bool>>();
 
             if (searchText != null)
             {
-                cacheKey += "_" + searchText.Trim().ToLower();
                 searchWords = searchText.Split(" ").Where(s => s.Length != 0).ToArray();
 
-                //add all conditions to array which will then be processed in GetItemsRecursive.
                 searchText = searchText.Trim().ToLower();
-                Func<HackerNewsItem, bool> searchFilter = (Item) => { return true; };
-                filters.Add(searchFilter);
 
                 foreach (string word in searchWords)
                 {
-                    Func<HackerNewsItem, bool> wordFilter = (Item) => { return Item.Title.ToLower().Contains(word); };
+                    Func<HackerNewsItem, bool> wordFilter = (Item) => { return Item.Title != null && Item.Title.ToLower().Contains(word); };
                     filters.Add(wordFilter);
                 }
             }
 
-            //to do: refactor cache. You need to cache the entire dataset, not specific search queries!
-            var cacheValue = CheckCacheForValue(cacheKey);
-            if (cacheValue != null)
-            {
-                return cacheValue;
-            }
+            IList<HackerNewsItem> results = await GetItems(itemCount, startIndex, new List<HackerNewsItem>(), filters);
 
-            IList<HackerNewsItem> results = await GetItemsRecursive(itemCount, startIndex, new List<HackerNewsItem>(), filters);
-
-            //Note: arbitrarily, I've decided to keep the cache active for a day. This would de determined by business requirements in a professional setting.
-            _Cache.Set(cacheKey, results, new MemoryCacheEntryOptions { SlidingExpiration = TimeSpan.FromDays(1) });
-
-            return results;
+            return results.Take(itemCount).ToList();
         }
 
-        private IList<HackerNewsItem>? CheckCacheForValue(string key)
+        private HackerNewsItem? CheckCacheForValue(string key)
         {
             if (_Cache.TryGetValue(key, out object? cacheData))
             {
                 if (cacheData != null)
                 {
-                    return cacheData as List<HackerNewsItem>;
+                    return cacheData as HackerNewsItem;
                 }
             }
 
             return null;
         }
 
-        //Note: I am aware that this could fail if the recursive call stack exceeds the maximum call stack size, but I do not anticipate that happening.
-        //If that were a concern, this would need to be changed to not be recursive using a while loop.
-        private async Task<IList<HackerNewsItem>> GetItemsRecursive(int itemCount, int? startIndex, IList<HackerNewsItem> items, List<Func<HackerNewsItem, bool>>? filters = null)
+        private async Task<IList<HackerNewsItem>> GetItems(int itemCount, int startIndex, IList<HackerNewsItem> items, List<Func<HackerNewsItem, bool>> filters)
         {
             if (itemCount <= 0)
             {
                 throw new Exception("Item Count cannot be 0 or below.");
-            }
-
-            if (startIndex == null)
-            {
-                int maxId = await GetMaxId();
-                startIndex = maxId;
-            }
-
-            if (startIndex <= 0)
-            {
-                return items;
             }
 
             if (items == null)
@@ -92,53 +65,76 @@ namespace HackerNewsKevinLong.Server.Services
                 items = new List<HackerNewsItem>();
             }
 
-            IList<HackerNewsItem> newItems = new List<HackerNewsItem>();
+            List<int> itemIndicies = JsonSerializer.Deserialize<List<int>>(await  _Client.GetStringAsync(Constants.HackerNewsLatestUrl));
 
-            //get itemCount number of requests at a time, and then wait for them to finish.
-            List<Task<string>> requests = new List<Task<string>>();
-            for (int i = 0; i < itemCount; i++)
+            while (startIndex < itemIndicies.Count && items.Count < itemCount)
             {
-                string url = String.Format(Constants.HackerNewsItemUrl, startIndex - i);
-                Task<string> newsItemMessage = _Client.GetStringAsync(url);
-                requests.Add(newsItemMessage);
-            }
-            Task.WaitAll(requests.ToArray());
-
-            //Deserialize string results into tasks and then ensure the resulting news items meet the criteria.
-            foreach (var stringTask in requests)
-            {
-                string stringResponse = stringTask.Result;
-                if (stringResponse != null)
+                //get itemCount (arbitrary) number of requests at a time, and then wait for them to finish.
+                List<Task<string>> requests = new List<Task<string>>();
+                for (int i = 0; i < itemCount; i++)
                 {
-                    HackerNewsItem? item = JsonSerializer.Deserialize<HackerNewsItem?>(stringResponse, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-                    if (item != null && item.Type == "story" && item.Url != null && item.Deleted != true)
+                    int id = itemIndicies[(int)startIndex + i];
+
+                    var cacheValue = CheckCacheForValue(id.ToString());
+
+                    if (cacheValue != null && filters != null)
                     {
-                        newItems.Add((HackerNewsItem)item);
+                        if(IsItemValid(cacheValue, filters))
+                        {
+                            items.Add(cacheValue);
+                        }
+                    }
+                    else
+                    {
+                        string url = String.Format(Constants.HackerNewsItemUrl, id);
+                        Task<string> newsItemMessage = _Client.GetStringAsync(url);
+                        requests.Add(newsItemMessage);
                     }
                 }
-            }
+                Task.WaitAll(requests.ToArray());
 
-            //apply filters if any.
-            if (filters != null)
-            {
-                IEnumerable<HackerNewsItem> newsItemsEnumerable = newItems.AsEnumerable();
-                foreach (var filter in filters)
+                //Deserialize string results into tasks and then ensure the resulting news items meet the criteria.
+                foreach (var stringTask in requests)
                 {
-                    newsItemsEnumerable = newsItemsEnumerable.Where(filter);
+                    string stringResponse = stringTask.Result;
+                    if (stringResponse != null)
+                    {
+                        HackerNewsItem? item = JsonSerializer.Deserialize<HackerNewsItem?>(stringResponse, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                        if (item != null)
+                        {
+                            //Note: arbitrarily, I've decided to keep the cache active for a day. This would de determined by business requirements in a professional setting.
+                            _Cache.Set(item.Id.ToString(), item, new MemoryCacheEntryOptions { SlidingExpiration = TimeSpan.FromDays(1) });
+
+                            if (item != null && filters != null)
+                            {
+                                if (IsItemValid(item, filters))
+                                {
+                                    items.Add(item);
+                                }
+                            }
+                        }
+                    }
                 }
 
-                //in order to be performant, we do not convert to a list until the end.
-                newItems = newsItemsEnumerable.ToList();
+                startIndex += itemCount;
             }
 
-            items = items.Concat(newItems).ToList();
+            return (List<HackerNewsItem>)items;
+        }
 
-            //check if correct number of items has been achieved. If not, continue searching.
-            if (items.Count() >= itemCount)
+        private bool IsItemValid(HackerNewsItem item, List<Func<HackerNewsItem, bool>> filters)
+        {
+
+            foreach (var filter in filters)
             {
-                return (List<HackerNewsItem>)items;
+                //exit loop if a filter is failed.
+                if (filter(item) == false)
+                {
+                    return false;
+                }
             }
-            else return await GetItemsRecursive(itemCount, startIndex - itemCount, items, filters);
+
+            return item.Type == "story" && item.Url != null && item.Deleted != true;
         }
 
         private async Task<int> GetMaxId()
