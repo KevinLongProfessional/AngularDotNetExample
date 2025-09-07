@@ -1,6 +1,6 @@
 <h1 id="tableLabel">Hacker News</h1>
 
-<p>This component demonstrates fetching data from the 500 latest stories in the Hacker News API and filtering it via text search.</p>
+<p>This component demonstrates fetching data from the latest stories in the Hacker News API and filtering them via text search.</p>
 
 <p>
   <input type="text" [(ngModel)]="searchText" />
@@ -20,16 +20,14 @@
   <tbody>
     <tr *ngFor="let item of hackerNewsItems">
       <td>{{ item.title }}</td>
-      <td>{{ item.url }}</td>
+      <td> <a href="{{item.url}}"> {{item.url}} </a></td>
     </tr>
   </tbody>
 </table>
 
-<div *ngIf="!isLoading && startIndex > 0">
-  <input type="button" value="Previous" (click)="swapPage(false)" />
+<p>Page: {{ startIndex/itemCount + 1 }}</p>
+<div class="bottom-buttons">
+    <input [disabled]="isLoading || startIndex <= 0" type="button" value="Previous" (click)="swapPage(false)" />
+    <input [disabled]="isLoading || reachedEnd" type="button" value="Next" (click)="swapPage(true)" />
 </div>
-<div *ngIf="!isLoading && !reachedEnd">
-  <input type="button" value="Next" (click)="swapPage(true)" />
-</div>
-
 

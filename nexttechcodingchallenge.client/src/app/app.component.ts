@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { Client, HackerNewsItem } from '../../SwaggerClient'
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
+import { Observable } from 'rxjs';
 
 @Component({
   selector: 'app-root',
@@ -40,7 +41,6 @@ export class AppComponent implements OnInit {
     }
   }
 
-  //to do: refactor to reduce duplicated logic.
   async onSearchChanged(resetPage: boolean = true) {
     this.reachedEnd = false;
 
@@ -66,10 +66,18 @@ export class AppComponent implements OnInit {
     this.isLoading = true;
     this.hackerNewsItems = [];
 
-    this.client.getNews(this.itemCount, this.startIndex).subscribe((result) => {
+    let observableNews: Observable<HackerNewsItem[]> | null = null;
+
+    if (this.searchText.trim().length == 0) {
+      observableNews = this.client.getNews(this.itemCount, this.startIndex);
+    }
+    else {
+      observableNews = this.client.searchNews(this.itemCount, this.startIndex, this.searchText);
+    }
+
+    observableNews.subscribe((result) => {
       this.hackerNewsItems = result;
       this.isLoading = false;
-
       if (this.hackerNewsItems.length < this.itemCount) {
         this.reachedEnd = true;
       }
