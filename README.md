@@ -1,0 +1,1 @@
+This is a simple Angular and .NET application which reads from the Hacker News API and shows the latest searches. It also supports a basic text search. To run this in Visual Studio, be sure to run both the server and client simultaneously by having both launch as startup projects.
