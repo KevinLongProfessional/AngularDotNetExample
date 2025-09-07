@@ -10,7 +10,7 @@ namespace Testing
     public class HackerNewsItemServiceTest
     {
         private HackerNewsItemService _Service;
-        private readonly Mock<HttpClientWrapper> _MockClient; //to do: make a wrapper around httpClient which has overridable methods.
+        private readonly Mock<HttpClientWrapper> _MockClient;
         private readonly Mock<IMemoryCacheWrapper> _MockCache;
         int MockMaximumId = 7;
 
