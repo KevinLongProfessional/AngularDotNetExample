@@ -71,7 +71,7 @@ namespace HackerNewsKevinLong.Server.Services
             {
                 //get itemCount (arbitrary) number of requests at a time, and then wait for them to finish.
                 List<Task<string>> requests = new List<Task<string>>();
-                for (int i = 0; i < itemCount; i++)
+                for (int i = 0; i < itemCount && i + startIndex < itemIndicies.Count; i++)
                 {
                     int id = itemIndicies[(int)startIndex + i];
 
