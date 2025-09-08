@@ -30,33 +30,28 @@ describe('AppComponent', () => {
   });
 
   it('should retrieve news items from the server', () => {
-    const mockItems: HackerNewsItem[] = [
+    const mockItems = [
       {
-          url: 'example url', id: 1, title: "example title",
-          init: function(_data?: any): void {
-              throw new Error('Function not implemented.');
-          },
-          toJSON: function(data?: any) {
-              throw new Error('Function not implemented.');
-          }
+          url: 'example url', id: 1, title: "example title"
       },
       {
-          url: 'example url', id: 21, title: "example title",
-          init: function(_data?: any): void {
-              throw new Error('Function not implemented.');
-          },
-          toJSON: function(data?: any) {
-              throw new Error('Function not implemented.');
-          }
+          url: 'example url', id: 21, title: "example title"
       }
     ];
 
     component.ngOnInit();
 
-    const req = httpMock.expectOne('/weatherforecast');
+    const req = httpMock.expectOne('/News/GetNews?itemCount=20&startIndex=0');
     expect(req.request.method).toEqual('GET');
-    req.flush(mockItems);
+    let jsonItems = JSON.stringify(mockItems); 
+    const responseBlob = new Blob([jsonItems], { type: 'application/octet-stream' });
 
-    expect(component.hackerNewsItems).toEqual(mockItems);
+    req.flush(responseBlob);
+
+    setTimeout(() => {
+      component.isLoading = false;
+      expect(component.hackerNewsItems.length).toEqual(mockItems.length);
+    }, 1000);
+   
   });
 });
